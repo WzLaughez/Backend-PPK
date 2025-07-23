@@ -103,7 +103,7 @@ exports.getBMI = async (req, res) => {
     const where = req.query.user_id ? { user_id: req.query.user_id } : {};
     const data = await DataKesehatan.findAll({
         where,
-        attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tinggi_badan', 'berat_badan', 'lingkar_lengan', 'lingkar_pinggang'],
+        attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tinggi_badan', 'berat_badan', 'lingkar_lengan', 'lingkar_pinggang', 'status_bmi'],
         order: [['tanggal_pemeriksaan', 'DESC']]
     });
     res.json(data);
@@ -118,7 +118,7 @@ exports.getGulaDarah = async (req, res) => {
     const where = req.query.user_id ? { user_id: req.query.user_id } : {};
     const data = await DataKesehatan.findAll({
         where,
-        attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'hba1c', 'gd_puasa', 'gd_2_jam_pp', 'gd_sewaktu'],
+        attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'gula_darah', 'tipe_gula_darah', 'status_gula_darah'],
         order: [['tanggal_pemeriksaan', 'DESC']]
     });
     res.json(data);
@@ -133,7 +133,7 @@ exports.getTekananDarah = async (req, res) => {
     const where = req.query.user_id ? { user_id: req.query.user_id } : {};
     const data = await DataKesehatan.findAll({
       where,
-      attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tekanan_sistolik', 'tekanan_diastolik'],
+      attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tekanan_sistolik', 'tekanan_diastolik', 'status_tekanan_darah'],
       order: [['tanggal_pemeriksaan', 'DESC']]
     });
     res.json(data);
@@ -145,24 +145,177 @@ exports.getTekananDarah = async (req, res) => {
       // Buat data baru
 exports.create = async (req, res) => {
         try {
-          const created = await DataKesehatan.create(req.body);
-          res.status(201).json(created);
-        } catch (err) {
-          res.status(400).json({ message: err.message });
-        }
-      };
+    const {
+      tinggi_badan,
+      berat_badan,
+      gula_darah,
+      tipe_gula_darah,
+      tekanan_sistolik,
+      tekanan_diastolik,
+      ...rest
+    } = req.body;
+    // Hitung BMI
+    let bmi = null;
+    if (tinggi_badan && berat_badan) {
+      const tinggi_m = parseFloat(tinggi_badan) / 100;
+      bmi = berat_badan / (tinggi_m * tinggi_m);
+    }
+    // Logika status BMI
+    let status_bmi = null;
+    if (bmi) {
+      if (bmi < 18.5) status_bmi = 'Kurus';
+      else if (bmi < 25) status_bmi = 'Normal';
+      else if (bmi < 30) status_bmi = 'Gemuk';
+      else status_bmi = 'Obesitas';
+    }
+
+    // Logika status Gula Darah
+    let status_gula_darah = null;
+    if (gula_darah && tipe_gula_darah) {
+      const gd = parseFloat(gula_darah);
+      switch (tipe_gula_darah) {
+        case 'puasa':
+          if (gd < 70) status_gula_darah = 'Hipoglikemia';
+          else if (gd <= 100) status_gula_darah = 'Normal';
+          else if (gd <= 125) status_gula_darah = 'Pradiabetes';
+          else status_gula_darah = 'Diabetes';
+          break;
+        case '2_jam_pp':
+          if (gd < 140) status_gula_darah = 'Normal';
+          else if (gd <= 199) status_gula_darah = 'Pradiabetes';
+          else status_gula_darah = 'Diabetes';
+          break;
+        case 'sewaktu':
+          if (gd < 200) status_gula_darah = 'Normal';
+          else status_gula_darah = 'Diabetes';
+          break;
+      }
+    }
+
+    // Logika status Tekanan Darah
+    let status_tekanan_darah = null;
+    if (tekanan_sistolik && tekanan_diastolik) {
+      const sis = parseInt(tekanan_sistolik);
+      const dias = parseInt(tekanan_diastolik);
+
+      if (sis < 90 || dias < 60) status_tekanan_darah = 'Rendah';
+      else if (sis <= 120 && dias <= 80) status_tekanan_darah = 'Normal';
+      else if (sis <= 139 || dias <= 89) status_tekanan_darah = 'Pra Hipertensi';
+      else if (sis <= 159 || dias <= 99) status_tekanan_darah = 'Hipertensi Tahap 1';
+      else status_tekanan_darah = 'Hipertensi Tahap 2';
+    }
+
+    // Gabungkan semuanya ke body
+    const newData = await DataKesehatan.create({
+      ...rest,
+      tinggi_badan,
+      berat_badan,
+      gula_darah,
+      tipe_gula_darah,
+      tekanan_sistolik,
+      tekanan_diastolik,
+      status_bmi,
+      status_gula_darah,
+      status_tekanan_darah
+    });
+
+    res.status(201).json(newData);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
       
       // Update data
 exports.update = async (req, res) => {
         try {
-          const updated = await DataKesehatan.update(req.body, {
-            where: { id: req.params.id }
-          });
-          res.json({ message: "Data berhasil diperbarui" }, req.body );
-        } catch (err) {
-          res.status(400).json({ message: err.message });
-        }
-      };
+    const id = req.params.id;
+    const {
+      tinggi_badan,
+      berat_badan,
+      gula_darah,
+      tipe_gula_darah,
+      tekanan_sistolik,
+      tekanan_diastolik,
+      ...rest
+    } = req.body;
+
+    // Hitung BMI
+    let bmi = null;
+    if (tinggi_badan && berat_badan) {
+      const tinggi_m = parseFloat(tinggi_badan) / 100;
+      bmi = berat_badan / (tinggi_m * tinggi_m);
+    }
+
+    // Status BMI
+    let status_bmi = null;
+    if (bmi) {
+      if (bmi < 18.5) status_bmi = 'Kurus';
+      else if (bmi < 25) status_bmi = 'Normal';
+      else if (bmi < 30) status_bmi = 'Gemuk';
+      else status_bmi = 'Obesitas';
+    }
+
+    // Status Gula Darah
+    let status_gula_darah = null;
+    if (gula_darah && tipe_gula_darah) {
+      const gd = parseFloat(gula_darah);
+      switch (tipe_gula_darah) {
+        case 'puasa':
+          if (gd < 70) status_gula_darah = 'Hipoglikemia';
+          else if (gd <= 100) status_gula_darah = 'Normal';
+          else if (gd <= 125) status_gula_darah = 'Pradiabetes';
+          else status_gula_darah = 'Diabetes';
+          break;
+        case '2_jam_pp':
+          if (gd < 140) status_gula_darah = 'Normal';
+          else if (gd <= 199) status_gula_darah = 'Pradiabetes';
+          else status_gula_darah = 'Diabetes';
+          break;
+        case 'sewaktu':
+          if (gd < 200) status_gula_darah = 'Normal';
+          else status_gula_darah = 'Diabetes';
+          break;
+      }
+    }
+
+    // Status Tekanan Darah
+    let status_tekanan_darah = null;
+    if (tekanan_sistolik && tekanan_diastolik) {
+      const sis = parseInt(tekanan_sistolik);
+      const dias = parseInt(tekanan_diastolik);
+
+      if (sis < 90 || dias < 60) status_tekanan_darah = 'Rendah';
+      else if (sis <= 120 && dias <= 80) status_tekanan_darah = 'Normal';
+      else if (sis <= 139 || dias <= 89) status_tekanan_darah = 'Pra Hipertensi';
+      else if (sis <= 159 || dias <= 99) status_tekanan_darah = 'Hipertensi Tahap 1';
+      else status_tekanan_darah = 'Hipertensi Tahap 2';
+    }
+
+    const updated = await DataKesehatan.update(
+      {
+        ...rest,
+        tinggi_badan,
+        berat_badan,
+        gula_darah,
+        tipe_gula_darah,
+        tekanan_sistolik,
+        tekanan_diastolik,
+        status_bmi,
+        status_gula_darah,
+        status_tekanan_darah,
+      },
+      { where: { id }, returning: true }
+    );
+
+    if (updated[0] === 0) {
+      return res.status(404).json({ message: "Data tidak ditemukan" });
+    }
+
+    res.status(200).json(updated[1][0]); // updated[1] is the array of updated rows
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
       
       // Hapus data
 exports.destroy = async (req, res) => {

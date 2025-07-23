@@ -34,24 +34,25 @@ const DataKesehatan = db.define("data_kesehatan", {
     type: DataTypes.DECIMAL(5, 2),
     allowNull: true
   },
+  status_bmi: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
 
   // Gula Darah Terpisah
-  hba1c: {
-    type: DataTypes.DECIMAL(4, 2),
+  gula_darah: {
+  type: DataTypes.DECIMAL(5, 2),
+  allowNull: true
+  },
+  tipe_gula_darah: {
+    type: DataTypes.ENUM('puasa', '2_jam_pp', 'sewaktu'),
+    allowNull: true
+},
+status_gula_darah: {
+    type: DataTypes.TEXT,
     allowNull: true
   },
-  gd_puasa: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: true
-  },
-  gd_2_jam_pp: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: true
-  },
-  gd_sewaktu: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: true
-  },
+
   
 // Tekanan Darah
   tekanan_sistolik: {
@@ -60,6 +61,10 @@ const DataKesehatan = db.define("data_kesehatan", {
   },
   tekanan_diastolik: {
     type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  status_tekanan_darah: {
+    type: DataTypes.TEXT,
     allowNull: true
   },
   catatan: {
