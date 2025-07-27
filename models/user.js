@@ -24,6 +24,10 @@ const User = db.define("users", {
     type: DataTypes.DATEONLY,
     allowNull: false
   },
+  jenis_kelamin: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   agama: {
     type: DataTypes.STRING,
     allowNull: false

@@ -1,9 +1,13 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const DataKesehatan = require('../models/dataKesehatan');
 // GET all users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll();
+    // Kecuali password, ambil semua data user
+    const users = await User.findAll({
+      attributes: { exclude: ['password'] }
+    });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving users', error: err.message });
@@ -15,9 +19,6 @@ exports.getUserById = async (req, res) => {
   const { id } = req.params;
 
   // ❗ Pastikan user yang login sesuai dengan ID yang diminta
-  if (req.user.id !== parseInt(id)) {
-    return res.status(403).json({ message: 'Kamu tidak punya akses ke data ini' });
-  }
 
   try {
     const user = await User.findByPk(id);
@@ -28,6 +29,38 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving user', error: err.message });
   }
 };
+
+// GET jumlah user yang belum periksa bulan ini
+exports.getBelumPeriksaBulanIni = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      include: [{
+        model: DataKesehatan,
+        attributes: ['tanggal_pemeriksaan'],
+        separate: true,
+        order: [['tanggal_pemeriksaan', 'DESC']],
+        limit: 1
+      }]
+    });
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    const belumPeriksa = users.filter(user => {
+      const lastCheck = user.data_kesehatans?.[0]?.tanggal_pemeriksaan;
+      if (!lastCheck) return true;
+      const tgl = new Date(lastCheck);
+      return (tgl.getMonth() +1) !== currentMonth || tgl.getFullYear() !== currentYear;
+    });
+
+    res.json({ total: belumPeriksa.length, currentMonth, currentYear});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal mengambil data pengguna yang belum periksa." });
+  }
+};
+
 // CREATE user
 exports.createUser = async (req, res) => {
   try {
@@ -36,6 +69,7 @@ exports.createUser = async (req, res) => {
       nama,
       tempat_lahir,
       tanggal_lahir,
+      jenis_kelamin,
       agama,
       no_hp,
       rt,
@@ -59,6 +93,7 @@ exports.createUser = async (req, res) => {
       nama,
       tempat_lahir,
       tanggal_lahir,
+      jenis_kelamin,
       agama,
       no_hp,
       rt,
@@ -82,6 +117,7 @@ exports.updateUser = async (req, res) => {
       nama,
       tempat_lahir,
       tanggal_lahir,
+      jenis_kelamin,
       agama,
       no_hp,
       rt,
@@ -110,6 +146,7 @@ exports.updateUser = async (req, res) => {
       nama,
       tempat_lahir,
       tanggal_lahir,
+      jenis_kelamin,
       agama,
       no_hp,
       rt,

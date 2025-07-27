@@ -1,4 +1,5 @@
 const DataKesehatan = require("../models/dataKesehatan");
+const User = require("../models/user");
 const { Op, fn, col, where, Sequelize } = require("sequelize");
 // Ambil semua data
 exports.getAll = async (req, res) => {
@@ -45,7 +46,11 @@ exports.getByMonth = async (req, res) => {
         tanggal_pemeriksaan: {
           [Op.and]: conditions
         }
-      }
+      },
+      include: [{
+        model: User,
+        attributes: ['id', 'nama'] // Ambil atribut yang diperlukan dari User
+      }],
     });
 
     res.json(data);
