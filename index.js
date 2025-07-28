@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const edukasiRoutes = require('./routes/edukasiRoutes');
 const galeriRoutes = require('./routes/galeriRoutes');
+const kegiatanRoutes = require('./routes/kegiatanRoutes');
 const subgaleriRoutes = require('./routes/subgaleriRoutes');
 const { verifyToken } = require('./middlewares/verifyToken');
 const path = require("path");
@@ -25,6 +26,7 @@ app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/edukasi', edukasiRoutes); // Edukasi routes
 app.use('/api/galeri', galeriRoutes); // Galeri routes
 app.use('/api/subgaleri', subgaleriRoutes); // Galeri routes
+app.use("/api/kegiatan", kegiatanRoutes);
 // Tidak sync agar tidak ubah struktur DB
 if (process.env.NODE_ENV !== 'production') {
   sequelize.sync({ alter: true }) // drop dan recreate tabel (hati-hati)

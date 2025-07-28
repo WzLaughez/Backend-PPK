@@ -8,7 +8,30 @@ exports.getAllUsers = async (req, res) => {
     const users = await User.findAll({
       attributes: { exclude: ['password'] }
     });
-    res.json(users);
+    // Ubah ke objek biasa dan hitung umur
+    const result = users.map(user => {
+      const plainUser = user.toJSON();
+
+      if (plainUser.tanggal_lahir) {
+        const today = new Date();
+        const birthDate = new Date(plainUser.tanggal_lahir);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ) {
+          age--;
+        }
+
+        plainUser.umur = age;
+      }
+
+      return plainUser;
+    });
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving users', error: err.message });
   }
@@ -18,17 +41,36 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   const { id } = req.params;
 
-  // ❗ Pastikan user yang login sesuai dengan ID yang diminta
-
   try {
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password'] }
+    });
+
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.json(user);
+    const plainUser = user.toJSON();
+
+    // Hitung umur dari tanggal_lahir
+    if (plainUser.tanggal_lahir) {
+      const today = new Date();
+      const birthDate = new Date(plainUser.tanggal_lahir);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      plainUser.umur = age;
+    }
+
+    res.json(plainUser);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving user', error: err.message });
   }
 };
+
 
 // GET jumlah user yang belum periksa bulan ini
 exports.getBelumPeriksaBulanIni = async (req, res) => {
@@ -71,6 +113,7 @@ exports.createUser = async (req, res) => {
       tanggal_lahir,
       jenis_kelamin,
       agama,
+      alamat,
       no_hp,
       rt,
       rw,
@@ -95,6 +138,7 @@ exports.createUser = async (req, res) => {
       tanggal_lahir,
       jenis_kelamin,
       agama,
+      alamat,
       no_hp,
       rt,
       rw,
@@ -119,6 +163,7 @@ exports.updateUser = async (req, res) => {
       tanggal_lahir,
       jenis_kelamin,
       agama,
+      alamat,
       no_hp,
       rt,
       rw,
@@ -147,6 +192,7 @@ exports.updateUser = async (req, res) => {
       tempat_lahir,
       tanggal_lahir,
       jenis_kelamin,
+      alamat,
       agama,
       no_hp,
       rt,

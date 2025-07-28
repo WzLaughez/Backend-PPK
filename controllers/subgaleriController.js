@@ -4,6 +4,14 @@ exports.getAll = async (req, res) => {
   const data = await Subgaleri.findAll({ order: [["createdAt", "DESC"]] });
   res.json(data);
 };
+// get limit 5
+exports.getLatest = async (req, res) => {
+  const data = await Subgaleri.findAll({
+    limit: 5,
+    order: [["createdAt", "DESC"]],
+  });
+  res.json(data);
+};
 
 exports.getByGaleriId = async (req, res) => {
   const data = await Subgaleri.findAll({

@@ -11,6 +11,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 router.get("/", controller.getAll);
+router.get("/latest", controller.getLatest);
 router.get("/:galeri_id", controller.getByGaleriId);
 router.post("/", upload.single("image"), controller.create);
 router.put("/:id", upload.single("image"), controller.update);

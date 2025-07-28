@@ -32,6 +32,10 @@ const User = db.define("users", {
     type: DataTypes.STRING,
     allowNull: false
   },
+  alamat: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   no_hp: {
     type: DataTypes.STRING,
     allowNull: true
