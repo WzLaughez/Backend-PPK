@@ -60,7 +60,20 @@ exports.getByMonth = async (req, res) => {
 };
 
 // Ambil data berdasarkan tahun untuk User
-exports.getByYear = async (req, res) => {
+
+function hitungBMI(tinggi, berat) {
+  if (!tinggi || !berat) return null;
+  const tinggiM = tinggi / 100;
+  return parseFloat((berat / (tinggiM * tinggiM)).toFixed(2));
+}
+
+function getStatusBMI(bmi) {
+  if (bmi < 18.5) return 'Kurus';
+  if (bmi < 25) return 'Normal';
+  if (bmi < 30) return 'Gemuk';
+  return 'Obesitas';
+}
+exports.getByYear = async (req, res) => { 
   try {
     const { year, user_id } = req.query;
 
@@ -71,12 +84,23 @@ exports.getByYear = async (req, res) => {
     const data = await DataKesehatan.findAll({
       where: {
         user_id: parseInt(user_id),
-        [Op.and]: where(fn('YEAR', col('tanggal_pemeriksaan')), year)
+        [Op.and]: [
+          where(fn('YEAR', col('tanggal_pemeriksaan')), parseInt(year))
+        ]
       },
       order: [['tanggal_pemeriksaan', 'ASC']]
     });
 
-    res.json(data);
+    const dataWithBMI = data.map(item => {
+      const bmi = hitungBMI(item.tinggi_badan, item.berat_badan);
+      return {
+        ...item.dataValues,
+        bmi,
+        status_bmi: bmi ? getStatusBMI(bmi) : null
+      };
+    });
+
+    res.json(dataWithBMI);
   } catch (err) {
     res.status(500).json({ message: "Gagal mengambil data per tahun", error: err.message });
   }
@@ -103,19 +127,34 @@ exports.getAllByUser = async (req, res) => {
 // ==============================
 
 // GET /data_kesehatan/filter/bmi / data_kesehatan/filter/bmi?user_id=1
+
 exports.getBMI = async (req, res) => {
   try {
     const where = req.query.user_id ? { user_id: req.query.user_id } : {};
     const data = await DataKesehatan.findAll({
-        where,
-        attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tinggi_badan', 'berat_badan', 'lingkar_lengan', 'lingkar_pinggang', 'status_bmi'],
-        order: [['tanggal_pemeriksaan', 'DESC']]
+      where,
+      attributes: ['id', 'user_id', 'tanggal_pemeriksaan', 'tinggi_badan', 'berat_badan', 'lingkar_lengan', 'lingkar_pinggang', 'status_bmi'],
+      order: [['tanggal_pemeriksaan', 'DESC']],
     });
-    res.json(data);
-} catch (err) {
+
+    // Hitung BMI untuk setiap record
+    const dataWithBMI = data.map(item => {
+      const tinggi = item.tinggi_badan / 100; // dari cm ke meter
+      const berat = item.berat_badan;
+      const bmi = tinggi && berat ? (berat / (tinggi * tinggi)).toFixed(2) : null;
+
+      return {
+        ...item.dataValues,
+        bmi: bmi ? parseFloat(bmi) : null,
+      };
+    });
+
+    res.json(dataWithBMI);
+  } catch (err) {
     res.status(500).json({ message: err.message });
-}
+  }
 };
+
 
 // GET /data_kesehatan/filter/gula_darah?user_id=1
 exports.getGulaDarah = async (req, res) => {
