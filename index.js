@@ -1,5 +1,7 @@
 const express = require('express');
 const sequelize = require('./config/db');
+// Import associations to establish model relationships
+require('./models/associations');
 const userRoutes = require('./routes/userRoutes');
 const dataKesehatanRoute = require("./routes/dataKesehatanRoutes");
 const authRoutes = require('./routes/authRoutes');
@@ -8,6 +10,7 @@ const edukasiRoutes = require('./routes/edukasiRoutes');
 const galeriRoutes = require('./routes/galeriRoutes');
 const kegiatanRoutes = require('./routes/kegiatanRoutes');
 const subgaleriRoutes = require('./routes/subgaleriRoutes');
+const tanyaJawabRoutes = require('./routes/tanyaJawabRoutes');
 const { verifyToken } = require('./middlewares/verifyToken');
 const path = require("path");
 const cors = require('cors');
@@ -25,8 +28,11 @@ app.use("/api/kesehatan", dataKesehatanRoute); // Health data routes
 app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/edukasi', edukasiRoutes); // Edukasi routes
 app.use('/api/galeri', galeriRoutes); // Galeri routes
-app.use('/api/subgaleri', subgaleriRoutes); // Galeri routes
+app.use('/api/subgaleri', subgaleriRoutes); // Subgaleri routes
+app.use("/api/tanya-jawab", tanyaJawabRoutes); // Tanya Jawab routes
 app.use("/api/kegiatan", kegiatanRoutes);
+
+// Database connection with safe migration handling
 // Tidak sync agar tidak ubah struktur DB
 if (process.env.NODE_ENV !== 'production') {
   sequelize.sync({ alter: true }) // drop dan recreate tabel (hati-hati)
@@ -55,5 +61,3 @@ if (process.env.NODE_ENV !== 'production') {
       console.error('Database error:', err.message);
     });
 }
-
-

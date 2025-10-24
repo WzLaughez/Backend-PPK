@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
 exports.login = async (req, res) => {
+  
   const { nik, password } = req.body;
   try {
     const user = await User.findOne({ where: { nik } });
